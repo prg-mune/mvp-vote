@@ -36,11 +36,16 @@ export default function VotePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const storedBrowserId =
-      window.localStorage.getItem("mvp-voting-browser-id") ||
-      crypto.randomUUID();
-    window.localStorage.setItem("mvp-voting-browser-id", storedBrowserId);
-    setBrowserId(storedBrowserId);
+    const storageKey = "mvp-voting-browser-id";
+
+    try {
+      const storedBrowserId = window.localStorage.getItem(storageKey);
+      const nextBrowserId = storedBrowserId || createBrowserId();
+      window.localStorage.setItem(storageKey, nextBrowserId);
+      setBrowserId(nextBrowserId);
+    } catch {
+      setBrowserId(createBrowserId());
+    }
   }, []);
 
   useEffect(() => {
@@ -370,4 +375,18 @@ function StatusMessage({ title, message }: { title: string; message: string }) {
       </section>
     </main>
   );
+}
+
+function createBrowserId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  return `browser-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
