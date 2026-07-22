@@ -54,10 +54,12 @@ export function CandidateManager({
   const router = useRouter();
   const [newCandidate, setNewCandidate] =
     useState<CandidateFormState>(emptyCandidate);
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [bulkText, setBulkText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingCandidate, setEditingCandidate] =
     useState<CandidateFormState>(emptyCandidate);
+  const [editingImageFile, setEditingImageFile] = useState<File | null>(null);
   const [orderedCandidates, setOrderedCandidates] = useState<Candidate[]>(
     sortCandidates(candidates),
   );
@@ -82,85 +84,130 @@ export function CandidateManager({
     setOrderedCandidates(sortCandidates(candidates));
   }, [candidates]);
 
+  async function uploadImage(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`/api/events/${eventId}/assets`, {
+      method: "POST",
+      body: formData,
+    });
+    const body = (await response.json()) as {
+      asset?: { imagePath: string };
+      error?: string;
+    };
+
+    if (!response.ok || !body.asset) {
+      throw new Error(body.error ?? "画像をアップロードできませんでした。");
+    }
+
+    return body.asset.imagePath;
+  }
+
   async function addCandidate() {
     setIsLoading(true);
     setMessage({ type: "idle", text: "" });
 
-    const response = await fetch(`/api/events/${eventId}/candidates`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newCandidate),
-    });
-    const body = (await response.json()) as { error?: string };
-    setIsLoading(false);
+    try {
+      const imagePath = newImageFile
+        ? await uploadImage(newImageFile)
+        : newCandidate.imagePath;
 
-    if (!response.ok) {
+      const response = await fetch(`/api/events/${eventId}/candidates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newCandidate, imagePath }),
+      });
+      const body = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(body.error ?? "候補者を追加できませんでした。");
+      }
+
+      setNewCandidate(emptyCandidate);
+      setNewImageFile(null);
+      setMessage({ type: "success", text: "候補者を追加しました。" });
+      router.refresh();
+    } catch (error) {
       setMessage({
         type: "error",
-        text: body.error ?? "候補者を追加できませんでした。",
+        text: error instanceof Error ? error.message : "候補者を追加できませんでした。",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setNewCandidate(emptyCandidate);
-    setMessage({ type: "success", text: "候補者を追加しました。" });
-    router.refresh();
   }
 
   async function addBulkCandidates() {
     setIsLoading(true);
     setMessage({ type: "idle", text: "" });
 
-    const response = await fetch(`/api/events/${eventId}/candidates`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ candidates: bulkCandidates }),
-    });
-    const body = (await response.json()) as { error?: string };
-    setIsLoading(false);
+    try {
+      const response = await fetch(`/api/events/${eventId}/candidates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidates: bulkCandidates }),
+      });
+      const body = (await response.json()) as { error?: string };
 
-    if (!response.ok) {
+      if (!response.ok) {
+        throw new Error(body.error ?? "候補者を一括登録できませんでした。");
+      }
+
+      setBulkText("");
+      setMessage({
+        type: "success",
+        text: `${bulkCandidates.length}名の候補者を登録しました。`,
+      });
+      router.refresh();
+    } catch (error) {
       setMessage({
         type: "error",
-        text: body.error ?? "候補者を一括登録できませんでした。",
+        text:
+          error instanceof Error
+            ? error.message
+            : "候補者を一括登録できませんでした。",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setBulkText("");
-    setMessage({
-      type: "success",
-      text: `${bulkCandidates.length}名の候補者を登録しました。`,
-    });
-    router.refresh();
   }
 
   async function saveCandidate(candidateId: string) {
     setIsLoading(true);
     setMessage({ type: "idle", text: "" });
 
-    const response = await fetch(
-      `/api/events/${eventId}/candidates/${candidateId}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingCandidate),
-      },
-    );
-    const body = (await response.json()) as { error?: string };
-    setIsLoading(false);
+    try {
+      const imagePath = editingImageFile
+        ? await uploadImage(editingImageFile)
+        : editingCandidate.imagePath;
 
-    if (!response.ok) {
+      const response = await fetch(
+        `/api/events/${eventId}/candidates/${candidateId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...editingCandidate, imagePath }),
+        },
+      );
+      const body = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(body.error ?? "候補者を保存できませんでした。");
+      }
+
+      setEditingId(null);
+      setEditingImageFile(null);
+      setMessage({ type: "success", text: "候補者を保存しました。" });
+      router.refresh();
+    } catch (error) {
       setMessage({
         type: "error",
-        text: body.error ?? "候補者を保存できませんでした。",
+        text: error instanceof Error ? error.message : "候補者を保存できませんでした。",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setEditingId(null);
-    setMessage({ type: "success", text: "候補者を保存しました。" });
-    router.refresh();
   }
 
   async function deleteCandidate(candidate: Candidate) {
@@ -175,50 +222,59 @@ export function CandidateManager({
     setIsLoading(true);
     setMessage({ type: "idle", text: "" });
 
-    const response = await fetch(
-      `/api/events/${eventId}/candidates/${candidate.id}`,
-      { method: "DELETE" },
-    );
-    const body = (await response.json()) as { error?: string };
-    setIsLoading(false);
+    try {
+      const response = await fetch(
+        `/api/events/${eventId}/candidates/${candidate.id}`,
+        { method: "DELETE" },
+      );
+      const body = (await response.json()) as { error?: string };
 
-    if (!response.ok) {
+      if (!response.ok) {
+        throw new Error(body.error ?? "候補者を削除できませんでした。");
+      }
+
+      setEditingId(null);
+      setEditingImageFile(null);
+      setMessage({ type: "success", text: "候補者を削除しました。" });
+      router.refresh();
+    } catch (error) {
       setMessage({
         type: "error",
-        text: body.error ?? "候補者を削除できませんでした。",
+        text: error instanceof Error ? error.message : "候補者を削除できませんでした。",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setEditingId(null);
-    setMessage({ type: "success", text: "候補者を削除しました。" });
-    router.refresh();
   }
 
   async function saveOrder() {
     setIsLoading(true);
     setMessage({ type: "idle", text: "" });
 
-    const response = await fetch(`/api/events/${eventId}/candidates`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orderedIds: orderedCandidates.map((candidate) => candidate.id),
-      }),
-    });
-    const body = (await response.json()) as { error?: string };
-    setIsLoading(false);
+    try {
+      const response = await fetch(`/api/events/${eventId}/candidates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderedIds: orderedCandidates.map((candidate) => candidate.id),
+        }),
+      });
+      const body = (await response.json()) as { error?: string };
 
-    if (!response.ok) {
+      if (!response.ok) {
+        throw new Error(body.error ?? "並び順を保存できませんでした。");
+      }
+
+      setMessage({ type: "success", text: "並び順を保存しました。" });
+      router.refresh();
+    } catch (error) {
       setMessage({
         type: "error",
-        text: body.error ?? "並び順を保存できませんでした。",
+        text: error instanceof Error ? error.message : "並び順を保存できませんでした。",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setMessage({ type: "success", text: "並び順を保存しました。" });
-    router.refresh();
   }
 
   function startEdit(candidate: Candidate) {
@@ -228,6 +284,7 @@ export function CandidateManager({
       description: candidate.description ?? "",
       imagePath: candidate.imagePath ?? "",
     });
+    setEditingImageFile(null);
     setMessage({ type: "idle", text: "" });
   }
 
@@ -254,7 +311,7 @@ export function CandidateManager({
     <div className={styles.managerStack}>
       {!isEditable && (
         <p className={styles.noticeText}>
-          投票受付開始後は候補者の追加・編集・並び替えはできません。
+          投票受付開始後は候補者の追加、編集、並び替えはできません。
         </p>
       )}
 
@@ -290,7 +347,7 @@ export function CandidateManager({
         <label className={styles.field}>
           <span>画像URL</span>
           <input
-            disabled={!isEditable || isLoading}
+            disabled={!isEditable || isLoading || Boolean(newImageFile)}
             onChange={(event) =>
               setNewCandidate((current) => ({
                 ...current,
@@ -299,6 +356,17 @@ export function CandidateManager({
             }
             placeholder="https://example.com/photo.jpg"
             value={newCandidate.imagePath}
+          />
+        </label>
+        <label className={styles.field}>
+          <span>画像アップロード</span>
+          <input
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            disabled={!isEditable || isLoading}
+            onChange={(event) => {
+              setNewImageFile(event.target.files?.[0] ?? null);
+            }}
+            type="file"
           />
         </label>
         <button
@@ -318,7 +386,7 @@ export function CandidateManager({
             disabled={!isEditable || isLoading}
             onChange={(event) => setBulkText(event.target.value)}
             placeholder={
-              "山田 太郎,チームを支えた推進力,https://example.com/yamada.jpg\n佐藤 花子,改善提案で成果に貢献,https://example.com/sato.jpg"
+              "山田 太郎,チームを支えた推進力,https://example.com/yamada.jpg\n佐藤 花子,改善提案で成果に貢献"
             }
             value={bulkText}
           />
@@ -403,7 +471,7 @@ export function CandidateManager({
                     value={editingCandidate.description}
                   />
                   <input
-                    disabled={isLoading}
+                    disabled={isLoading || Boolean(editingImageFile)}
                     onChange={(event) =>
                       setEditingCandidate((current) => ({
                         ...current,
@@ -412,6 +480,14 @@ export function CandidateManager({
                     }
                     placeholder="画像URL"
                     value={editingCandidate.imagePath}
+                  />
+                  <input
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    disabled={isLoading}
+                    onChange={(event) =>
+                      setEditingImageFile(event.target.files?.[0] ?? null)
+                    }
+                    type="file"
                   />
                 </div>
               ) : (
@@ -423,7 +499,7 @@ export function CandidateManager({
                     {candidate.description}
                   </span>
                   {candidate.imagePath && (
-                    <span className={styles.meta}>画像URL登録済み</span>
+                    <span className={styles.meta}>画像登録済み</span>
                   )}
                 </div>
               )}

@@ -25,6 +25,11 @@ type EventBundle = {
   tieBreaks: TieBreak[];
 };
 
+type StoredAsset = {
+  body: Buffer;
+  contentType: string;
+};
+
 const dataRoot = path.join(process.cwd(), "data", "events");
 const maxCandidates = 50;
 
@@ -171,6 +176,47 @@ export async function createEvent(input: {
 export async function getBundle(eventId: string): Promise<EventBundle> {
   await ensureSeedData();
   return getBundleFiles(eventId);
+}
+
+export async function saveEventAsset(
+  eventId: string,
+  input: { fileName: string; contentType: string; body: Buffer },
+) {
+  await getBundle(eventId);
+  const extension = extensionForAsset(input.fileName, input.contentType);
+  if (!extension) {
+    throw new Error("画像ファイルはJPEG、PNG、WebP、GIFのみ登録できます。");
+  }
+
+  const assetsDir = path.join(eventPath(eventId), "assets");
+  await mkdir(assetsDir, { recursive: true });
+
+  const assetName = `${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID()}${extension}`;
+  await writeFile(path.join(assetsDir, assetName), input.body);
+
+  return {
+    fileName: assetName,
+    imagePath: `/api/events/${eventId}/assets/${assetName}`,
+  };
+}
+
+export async function readEventAsset(
+  eventId: string,
+  fileName: string,
+): Promise<StoredAsset> {
+  await getBundle(eventId);
+  if (!/^[a-zA-Z0-9_.-]+$/.test(fileName)) {
+    throw new Error("画像ファイル名が不正です。");
+  }
+
+  const extension = path.extname(fileName).toLowerCase();
+  const contentType = assetContentType(extension);
+  if (!contentType) {
+    throw new Error("画像ファイルが見つかりません。");
+  }
+
+  const body = await readFile(path.join(eventPath(eventId), "assets", fileName));
+  return { body, contentType };
 }
 
 async function getBundleFiles(eventId: string): Promise<EventBundle> {
@@ -776,6 +822,33 @@ function validCandidateIds(candidateIds: string[], candidates: Candidate[]) {
 
 function firstValidCandidateId(candidateIds: string[], candidates: Candidate[]) {
   return validCandidateIds(candidateIds, candidates)[0];
+}
+
+function extensionForAsset(fileName: string, contentType: string) {
+  const extension = path.extname(fileName).toLowerCase();
+  const extensionContentType = assetContentType(extension);
+  if (extensionContentType && (!contentType || extensionContentType === contentType)) {
+    return extension;
+  }
+
+  const extensionByContentType: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+  };
+  return extensionByContentType[contentType];
+}
+
+function assetContentType(extension: string) {
+  const contentTypes: Record<string, string> = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+  };
+  return contentTypes[extension];
 }
 
 function slugId(name: string, index: number) {

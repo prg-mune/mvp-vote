@@ -178,6 +178,37 @@ test("validates event passwords before voting", async () => {
   assert.equal(deleted.status, 200);
 });
 
+test("allows admins to upload candidate images", async () => {
+  const cookie = await loginAsAdmin();
+  const event = await createTestEvent(cookie, "Asset Upload Test");
+  const formData = new FormData();
+  formData.append(
+    "file",
+    new File([new Uint8Array([137, 80, 78, 71])], "avatar.png", {
+      type: "image/png",
+    }),
+  );
+
+  const upload = await request(`/api/events/${event.id}/assets`, {
+    method: "POST",
+    headers: { cookie },
+    body: formData,
+  });
+  assert.equal(upload.status, 200);
+  const { asset } = await upload.json();
+  assert.match(asset.imagePath, new RegExp(`/api/events/${event.id}/assets/.+\\.png$`));
+
+  const image = await request(asset.imagePath);
+  assert.equal(image.status, 200);
+  assert.equal(image.headers.get("content-type"), "image/png");
+
+  const deleted = await request(`/api/events/${event.id}`, {
+    method: "DELETE",
+    headers: { cookie },
+  });
+  assert.equal(deleted.status, 200);
+});
+
 test("allows admins to delete draft candidates", async () => {
   const cookie = await loginAsAdmin();
   const event = await createTestEvent(cookie, "Delete Candidate Test");
