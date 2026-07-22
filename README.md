@@ -1,24 +1,23 @@
 # MVP Voting App
 
-イベント会場でMVP候補者への投票、管理、順位発表を行うためのWebアプリです。
-
-管理者はイベント作成、候補者登録、投票受付、集計、発表操作を行えます。参加者はスマートフォンから投票し、発表画面は会場スクリーン共有向けにリアルタイム更新されます。
+イベント会場で MVP 候補者への投票、管理、順位発表を行うための Web アプリです。
+管理者はイベント作成、候補者登録、投票受付、集計、発表操作を行えます。参加者はスマートフォンから投票でき、発表画面は会場スクリーン共有向けにリアルタイム更新されます。
 
 ## 主な機能
 
 - 管理者パスワードによるログイン
 - イベント作成、編集、削除
-- 候補者の単体登録、一括登録、編集、削除
-- 候補者画像URLの登録
-- 候補者上限50名
-- 1人あたり複数MVP候補者への投票
+- 候補者の個別登録、一括登録、編集、削除
+- 候補者画像 URL の登録
+- 候補者は最大 50 名
+- 1 人あたり複数名の MVP 候補者へ投票
 - 投票受付、締切、順位確定
 - 同票時の順位調整
-- 投票一覧と集計結果のCSV出力
-- QRコード表示用の別画面
+- 投票一覧と集計結果の CSV 出力
+- QR コード表示用の別画面
 - 発表画面のリアルタイム反映
 - イベント初期化、投票結果リセット、イベント削除
-- AWS ECSデプロイ準備
+- Docker / AWS ECS Fargate デプロイ対応
 
 ## 技術構成
 
@@ -28,14 +27,15 @@
 - TypeScript
 - JSON file storage under `data/events`
 - Docker
-- AWS ECS Fargate deployment template
+- AWS CloudFormation
+- Amazon ECS Fargate / ECR / EFS / ALB
 
 ## 必要環境
 
 - Node.js `>=22.13.0`
 - npm
 
-Windows PowerShellでは `npm` が実行ポリシーでブロックされる場合があるため、基本的に `npm.cmd` を使います。
+Windows PowerShell では `npm` が実行ポリシーでブロックされる場合があるため、基本的に `npm.cmd` を使います。
 
 ## ローカル起動
 
@@ -54,7 +54,7 @@ http://localhost:5173/admin
 
 ## ログイン情報
 
-管理者パスワードのデフォルトは次です。
+管理者パスワードのデフォルト:
 
 ```text
 preview
@@ -66,7 +66,7 @@ preview
 ADMIN_PASSWORD=任意の管理者パスワード
 ```
 
-デモイベントの参加パスワードは次です。
+デモイベントの参加パスワード:
 
 ```text
 mvp2026
@@ -81,7 +81,7 @@ npm.cmd test
 npm.cmd run lint
 ```
 
-`npm.cmd test` はビルド後にAPIと主要な画面レンダリングを検証します。
+`npm.cmd test` はビルド後に API と主要画面レンダリングを検証します。
 
 ## データ保存
 
@@ -91,56 +91,40 @@ npm.cmd run lint
 data/events
 ```
 
-`data/` はGit管理対象外です。本番ではコンテナ内ローカル保存にせず、EFSなどの永続ボリュームを `/app/data` にマウントしてください。
+`data/` は Git 管理外です。本番では EFS などの永続ボリュームを `/app/data` にマウントしてください。
 
-## 主要画面
+## 主な画面
 
 - `/admin`: 管理画面
 - `/admin/:eventId`: イベント管理詳細
 - `/vote/:eventId`: 投票者画面
 - `/presentation/:eventId`: 発表画面
-- `/qr/:eventId`: QRコード表示画面
+- `/qr/:eventId`: QR コード表示画面
 - `/api/health`: ヘルスチェック
 
-## AWSデプロイ
+## AWS デプロイ
 
-AWS向けの最小構成は次を想定しています。
+AWS 側のリソースは CloudFormation で作成します。
 
-- Amazon ECR
-- Amazon ECS Fargate
-- Amazon EFS
-- Application Load Balancer
-- AWS Systems Manager Parameter Store
-- CloudWatch Logs
-- GitHub Actions
-
-追加済みのAWS関連ファイル:
+主な追加ファイル:
 
 - `Dockerfile`
 - `.dockerignore`
-- `aws/ecs-task-definition.json`
+- `infra/cloudformation/mvp-voting-app.yml`
 - `.github/workflows/deploy-aws.yml`
 - `docs/aws-deploy.md`
 
-詳細手順は [docs/aws-deploy.md](docs/aws-deploy.md) を参照してください。
+手順の詳細は [docs/aws-deploy.md](docs/aws-deploy.md) を参照してください。
 
-## GitHub Actions
+大まかな流れ:
 
-AWSデプロイ用ワークフローは手動実行のみ有効です。
+1. AWS CLI でログイン
+2. `infra/cloudformation/mvp-voting-app.yml` を CloudFormation にデプロイ
+3. CloudFormation の出力 `GitHubActionsRoleArn` を GitHub Secret `AWS_ROLE_TO_ASSUME` に登録
+4. GitHub Actions の `Deploy to AWS ECS` を手動実行
+5. CloudFormation の出力 `AppUrl` にアクセス
 
-```text
-Actions > Deploy to AWS ECS > Run workflow
-```
-
-AWS側のECR、ECS、EFS、IAM、SSM Parameter Storeを作成してから実行してください。
-
-必要なGitHub Secret:
-
-```text
-AWS_ROLE_TO_ASSUME
-```
-
-## Dockerローカル確認
+## Docker ローカル確認
 
 ```powershell
 docker build -t mvp-voting-app .
@@ -155,7 +139,7 @@ http://localhost:3000/admin
 
 ## 注意事項
 
-- Slackなど認証が必要な画像URLは、投票画面や発表画面で表示できない場合があります。
-- 壊れたイベントJSONが混ざっていても一覧全体は落ちないようにしていますが、対象イベントは修復または再作成してください。
-- 開発環境では日本語を含むOneDriveパスでCloudflare/Vite pluginが不安定になることがあるため、devサーバー時はCloudflare pluginを外しています。
-- 本番公開時はALBまたはCloudFrontでHTTPS化してください。
+- Slack など認証が必要な画像 URL は、投票画面や発表画面で表示できない場合があります。
+- 壊れたイベント JSON が混ざっていても一覧全体は落ちないようにしていますが、対象イベントは修復または再作成してください。
+- 開発環境では日本語を含む OneDrive パスで Cloudflare/Vite plugin が不安定になることがあるため、dev サーバー時は Cloudflare plugin を外しています。
+- 現在の CloudFormation テンプレートは HTTP 公開です。本番公開時は ALB または CloudFront で HTTPS 化してください。
