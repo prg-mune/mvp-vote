@@ -47,6 +47,7 @@ export default function VotePage() {
     let isActive = true;
 
     async function loadEvent() {
+      try {
       setIsLoading(true);
       const response = await fetch(`/api/events/${eventId}`);
       const body = (await response.json()) as EventResponse;
@@ -67,6 +68,12 @@ export default function VotePage() {
       setSelectedIds([]);
       setValidVoteCount(body.votes.filter((vote) => vote.isValid).length);
       setIsLoading(false);
+      } catch {
+        if (!isActive) return;
+        setEvent(null);
+        setMessage("イベント情報の読み込みに失敗しました。URLを確認して再読み込みしてください。");
+        setIsLoading(false);
+      }
     }
 
     loadEvent();
