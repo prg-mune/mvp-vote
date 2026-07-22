@@ -13,6 +13,25 @@ if (-not [string]::IsNullOrWhiteSpace($Profile)) {
   $env:AWS_PROFILE = $Profile
 }
 
+function Assert-NativeCommandSucceeded {
+  param(
+    [string]$CommandName
+  )
+
+  if ($LASTEXITCODE -ne 0) {
+    throw "$CommandName failed with exit code $LASTEXITCODE."
+  }
+}
+
+function Convert-ToFileUri {
+  param(
+    [string]$Path
+  )
+
+  $fullPath = [System.IO.Path]::GetFullPath($Path)
+  return ([System.Uri]::new($fullPath)).AbsoluteUri
+}
+
 function Get-StackOutputMap {
   param(
     [string]$Name,
@@ -24,6 +43,7 @@ function Get-StackOutputMap {
     --region $AwsRegion `
     --query "Stacks[0].Outputs" `
     --output json | ConvertFrom-Json
+  Assert-NativeCommandSucceeded "aws cloudformation describe-stacks"
 
   $map = @{}
   foreach ($output in $stack) {
@@ -65,18 +85,22 @@ $registry = $ecrRepositoryUri.Split("/")[0]
 
 Write-Host "Deploying image: $imageUri"
 aws ecr get-login-password --region $Region | docker login --username AWS --password-stdin $registry
+Assert-NativeCommandSucceeded "docker login"
 
 if (-not $SkipBuild) {
   docker build -t $imageUri .
+  Assert-NativeCommandSucceeded "docker build"
 }
 
 docker push $imageUri
+Assert-NativeCommandSucceeded "docker push"
 
 $taskDefinition = aws ecs describe-task-definition `
   --task-definition $ecsTaskFamily `
   --region $Region `
   --query taskDefinition `
   --output json | ConvertFrom-Json
+Assert-NativeCommandSucceeded "aws ecs describe-task-definition"
 
 foreach ($container in $taskDefinition.containerDefinitions) {
   if ($container.name -eq $ecsTaskFamily) {
@@ -99,13 +123,16 @@ foreach ($propertyName in $removeProperties) {
 }
 
 $taskDefinitionPath = Join-Path $env:TEMP "mvp-voting-task-definition-${ImageTag}.json"
-$taskDefinition | ConvertTo-Json -Depth 100 | Set-Content -Path $taskDefinitionPath -Encoding utf8
+$taskDefinitionJson = $taskDefinition | ConvertTo-Json -Depth 100
+[System.IO.File]::WriteAllText($taskDefinitionPath, $taskDefinitionJson, [System.Text.UTF8Encoding]::new($false))
+$taskDefinitionUri = Convert-ToFileUri -Path $taskDefinitionPath
 
 $newTaskDefinitionArn = aws ecs register-task-definition `
-  --cli-input-json "file://$taskDefinitionPath" `
+  --cli-input-json $taskDefinitionUri `
   --region $Region `
   --query "taskDefinition.taskDefinitionArn" `
   --output text
+Assert-NativeCommandSucceeded "aws ecs register-task-definition"
 
 aws ecs update-service `
   --cluster $ecsClusterName `
@@ -113,11 +140,13 @@ aws ecs update-service `
   --task-definition $newTaskDefinitionArn `
   --desired-count $DesiredCount `
   --region $Region | Out-Null
+Assert-NativeCommandSucceeded "aws ecs update-service"
 
 aws ecs wait services-stable `
   --cluster $ecsClusterName `
   --services $ecsServiceName `
   --region $Region
+Assert-NativeCommandSucceeded "aws ecs wait services-stable"
 
 Write-Host "Deploy complete."
 Write-Host "App URL: $appUrl"
