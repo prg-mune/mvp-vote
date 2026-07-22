@@ -56,6 +56,19 @@ function Require-Output {
   return $Outputs[$Key]
 }
 
+function Add-PropertyIfPresent {
+  param(
+    [System.Collections.Specialized.OrderedDictionary]$Target,
+    [object]$Source,
+    [string]$PropertyName
+  )
+
+  $property = $Source.PSObject.Properties[$PropertyName]
+  if ($null -ne $property -and $null -ne $property.Value) {
+    $Target[$PropertyName] = $property.Value
+  }
+}
+
 if ([string]::IsNullOrWhiteSpace($ImageTag)) {
   try {
     $ImageTag = (git rev-parse --short HEAD).Trim()
@@ -99,21 +112,31 @@ foreach ($container in $taskDefinition.containerDefinitions) {
   }
 }
 
-$removeProperties = @(
-  "taskDefinitionArn",
-  "revision",
-  "status",
-  "requiresAttributes",
-  "compatibilities",
-  "registeredAt",
-  "registeredBy"
+$registerTaskDefinition = [ordered]@{}
+$registerProperties = @(
+  "family",
+  "taskRoleArn",
+  "executionRoleArn",
+  "networkMode",
+  "containerDefinitions",
+  "volumes",
+  "placementConstraints",
+  "requiresCompatibilities",
+  "cpu",
+  "memory",
+  "pidMode",
+  "ipcMode",
+  "proxyConfiguration",
+  "inferenceAccelerators",
+  "ephemeralStorage",
+  "runtimePlatform"
 )
 
-foreach ($propertyName in $removeProperties) {
-  $taskDefinition.PSObject.Properties.Remove($propertyName)
+foreach ($propertyName in $registerProperties) {
+  Add-PropertyIfPresent -Target $registerTaskDefinition -Source $taskDefinition -PropertyName $propertyName
 }
 
-$taskDefinitionJson = $taskDefinition | ConvertTo-Json -Depth 100
+$taskDefinitionJson = $registerTaskDefinition | ConvertTo-Json -Depth 100 -Compress
 
 $newTaskDefinitionArn = aws ecs register-task-definition `
   --cli-input-json $taskDefinitionJson `
