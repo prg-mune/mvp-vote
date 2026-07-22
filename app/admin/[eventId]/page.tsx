@@ -64,6 +64,7 @@ export default async function AdminEventPage({
   if (!bundle) {
     redirect("/admin");
   }
+
   const results = rankCandidates(bundle);
   const positiveResults = results.filter((candidate) => candidate.votes > 0);
   const zeroVoteResults = results.filter((candidate) => candidate.votes === 0);
@@ -99,7 +100,7 @@ export default async function AdminEventPage({
               rel="noreferrer"
               target="_blank"
             >
-              発表画面を開く ↗
+              発表画面を開く →
             </Link>
           </div>
         </header>
@@ -117,7 +118,7 @@ export default async function AdminEventPage({
               rel="noreferrer"
               target="_blank"
             >
-              投票画面を開く ↗
+              投票画面を開く →
             </Link>
             <QrInvitePanel eventId={eventId} />
             <EventStatusActions
@@ -187,30 +188,45 @@ export default async function AdminEventPage({
                 </a>
               </div>
               <div className={styles.voteList}>
-                {bundle.votes.map((vote) => (
-                  <div className={styles.voteRow} key={vote.id}>
-                    <div>
-                      <strong>{vote.nickname}</strong>
-                      <div className={styles.meta}>
-                        {vote.candidateIds
-                          .map((candidateId) => candidatesById.get(candidateId)?.name)
-                          .filter(Boolean)
-                          .join("、") || "不明"}
+                {bundle.votes.length === 0 && (
+                  <div className={styles.emptyState}>まだ投票はありません。</div>
+                )}
+                {bundle.votes.map((vote, index) => {
+                  const votedCandidates = vote.candidateIds
+                    .map((candidateId) => candidatesById.get(candidateId)?.name)
+                    .filter((name): name is string => Boolean(name));
+
+                  return (
+                    <div className={styles.voteHistoryRow} key={vote.id}>
+                      <span className={styles.voteIndex}>#{index + 1}</span>
+                      <div className={styles.voteHistoryMain}>
+                        <div className={styles.voteHistoryHeader}>
+                          <strong>{vote.nickname}</strong>
+                          <span
+                            className={
+                              vote.isValid ? styles.statusOpen : styles.statusClosed
+                            }
+                          >
+                            {vote.isValid ? "有効" : "無効"}
+                          </span>
+                        </div>
+                        <div className={styles.voteHistoryTargets}>
+                          {votedCandidates.length > 0 ? (
+                            votedCandidates.map((name) => (
+                              <span key={name}>{name}</span>
+                            ))
+                          ) : (
+                            <span>候補者不明</span>
+                          )}
+                        </div>
+                        <span className={styles.meta}>
+                          投票日時: {new Date(vote.updatedAt).toLocaleString("ja-JP")}
+                        </span>
                       </div>
+                      <VoteValidityButton eventId={eventId} vote={vote} />
                     </div>
-                    <span className={styles.meta}>
-                      {new Date(vote.updatedAt).toLocaleString("ja-JP")}
-                    </span>
-                    <span
-                      className={
-                        vote.isValid ? styles.statusOpen : styles.statusClosed
-                      }
-                    >
-                      {vote.isValid ? "有効" : "無効"}
-                    </span>
-                    <VoteValidityButton eventId={eventId} vote={vote} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -271,7 +287,7 @@ export default async function AdminEventPage({
                         {zeroVoteResults.map((candidate) => candidate.name).join("、")}
                       </p>
                     </div>
-                    <span className={styles.statusDraft}>まとめ表示</span>
+                    <span className={styles.statusDraft}>まとめて表示</span>
                   </div>
                 )}
               </div>
@@ -305,7 +321,7 @@ export default async function AdminEventPage({
                   rel="noreferrer"
                   target="_blank"
                 >
-                  スクリーン表示 ↗
+                  スクリーン表示 →
                 </Link>
               </div>
               <PresentationControls

@@ -152,6 +152,32 @@ test("allows admins to bulk add candidates", async () => {
   assert.equal(deleted.status, 200);
 });
 
+test("validates event passwords before voting", async () => {
+  const cookie = await loginAsAdmin();
+  const event = await createTestEvent(cookie, "Password Validation Test");
+
+  const invalid = await request(`/api/events/${event.id}/password`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ password: "wrong-pass" }),
+  });
+  assert.equal(invalid.status, 401);
+
+  const valid = await request(`/api/events/${event.id}/password`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ password: "guest-pass" }),
+  });
+  assert.equal(valid.status, 200);
+  assert.equal((await valid.json()).ok, true);
+
+  const deleted = await request(`/api/events/${event.id}`, {
+    method: "DELETE",
+    headers: { cookie },
+  });
+  assert.equal(deleted.status, 200);
+});
+
 test("allows admins to delete draft candidates", async () => {
   const cookie = await loginAsAdmin();
   const event = await createTestEvent(cookie, "Delete Candidate Test");

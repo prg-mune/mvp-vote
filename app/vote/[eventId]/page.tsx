@@ -19,6 +19,11 @@ type VoteResponse = {
   error?: string;
 };
 
+type PasswordResponse = {
+  ok?: boolean;
+  error?: string;
+};
+
 export default function VotePage() {
   const params = useParams<{ eventId: string }>();
   const eventId = params.eventId ?? "demo-2026-mvp";
@@ -135,6 +140,28 @@ export default function VotePage() {
     setStep("complete");
   }
 
+  async function verifyEventPassword() {
+    if (!password.trim()) return;
+
+    setIsSubmitting(true);
+    setMessage("");
+
+    const response = await fetch(`/api/events/${eventId}/password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    const body = (await response.json()) as PasswordResponse;
+    setIsSubmitting(false);
+
+    if (!response.ok) {
+      setMessage(body.error ?? "参加パスワードが違います。");
+      return;
+    }
+
+    setStep("nickname");
+  }
+
   function toggleCandidate(candidateId: string) {
     setSelectedIds((current) => {
       if (current.includes(candidateId)) {
@@ -214,8 +241,8 @@ export default function VotePage() {
             <div className={styles.actions}>
               <button
                 className={styles.primary}
-                disabled={!password.trim()}
-                onClick={() => setStep("nickname")}
+                disabled={!password.trim() || isSubmitting}
+                onClick={verifyEventPassword}
                 type="button"
               >
                 次へ

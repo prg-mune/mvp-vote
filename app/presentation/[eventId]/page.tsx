@@ -19,8 +19,8 @@ type ResultsResponse = {
 const phaseLabels: Record<PresentationPhase, string> = {
   waiting: "待機",
   teaser: "予告",
-  revealed: "発表",
-  "all-results": "全順位",
+  revealed: "順位発表",
+  "all-results": "終了",
   finished: "終了",
 };
 
@@ -112,7 +112,6 @@ export default function PresentationPage() {
     if (phase === "waiting") return "発表までしばらくお待ちください";
     if (phase === "teaser") return `まもなく第${currentRank}位を発表します`;
     if (phase === "revealed") return currentCandidate?.name ?? "発表中";
-    if (phase === "all-results") return "最終結果";
     return "ご参加ありがとうございました";
   }, [currentCandidate?.name, currentRank, event, phase]);
 
@@ -120,7 +119,7 @@ export default function PresentationPage() {
     <main className={styles.shell}>
       <section
         className={`${styles.stage} ${
-          phase === "all-results" ? styles.rankingState : styles[phase]
+          phase === "all-results" ? styles.finished : styles[phase]
         }`}
         aria-label="MVP発表画面"
       >
@@ -151,7 +150,9 @@ export default function PresentationPage() {
           )}
           {phase === "teaser" && <div className={styles.count}>{currentRank}</div>}
           {phase === "waiting" && <div className={styles.pulse}>READY</div>}
-          {phase === "finished" && <div className={styles.medal}>END</div>}
+          {(phase === "finished" || phase === "all-results") && (
+            <div className={styles.medal}>END</div>
+          )}
 
           <div className={styles.copy}>
             <p>{phase === "revealed" ? `第${currentRank}位` : "2026 MVP Award"}</p>
@@ -162,32 +163,18 @@ export default function PresentationPage() {
               </p>
             )}
             {phase === "teaser" && (
-              <p>会場の皆さま、準備はよろしいでしょうか。</p>
+              <p>会場のみなさま、発表の準備はよろしいでしょうか。</p>
             )}
             {phase === "waiting" && (
               <p>
                 管理画面から発表操作を行うと、この画面へリアルタイムに反映されます。
               </p>
             )}
-            {phase === "finished" && (
-              <p>結果は管理画面から確認できます。</p>
+            {(phase === "finished" || phase === "all-results") && (
+              <p>全体の順位は管理画面で確認できます。</p>
             )}
             {message && <p>{message}</p>}
           </div>
-
-          {phase === "all-results" && (
-            <div className={styles.ranking}>
-              {ranking.map((person) => (
-                <div className={styles.rankRow} key={person.id}>
-                  <span className={styles.rankNo}>{person.rank}</span>
-                  <span className={styles.avatar}>{person.name.slice(0, 1)}</span>
-                  <strong>{person.name}</strong>
-                  <small>{person.description}</small>
-                  <b>{person.votes}票</b>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className={styles.footerBar}>

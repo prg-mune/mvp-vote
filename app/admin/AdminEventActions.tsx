@@ -14,7 +14,7 @@ const phaseLabels: Record<PresentationPhase, string> = {
   waiting: "待機",
   teaser: "予告",
   revealed: "順位発表",
-  "all-results": "全順位",
+  "all-results": "終了",
   finished: "終了",
 };
 
@@ -140,18 +140,12 @@ export function PresentationControls({
     }
     if (phase === "revealed") {
       return {
-        label: "全順位を表示",
-        phase: "all-results" as PresentationPhase,
-      };
-    }
-    if (phase === "all-results") {
-      return {
         label: "終了画面を表示",
         phase: "finished" as PresentationPhase,
       };
     }
     return {
-      label: "待機画面に戻す",
+      label: "待機画面に戻る",
       phase: "waiting" as PresentationPhase,
     };
   }, [nextRank, phase, safeCurrentRank]);
@@ -210,12 +204,13 @@ export function PresentationControls({
           ["waiting", "待機"],
           ["teaser", "予告"],
           ["revealed", "順位発表"],
-          ["all-results", "全順位"],
           ["finished", "終了"],
         ].map(([stepPhase, label], index) => (
           <div
             className={`${styles.flowStep} ${
-              phase === stepPhase ? styles.flowStepActive : ""
+              phase === stepPhase || (phase === "all-results" && stepPhase === "finished")
+                ? styles.flowStepActive
+                : ""
             }`}
             key={stepPhase}
           >
@@ -248,7 +243,7 @@ export function PresentationControls({
           onClick={() => updatePresentation("waiting")}
           type="button"
         >
-          待機へ戻す
+          待機へ戻る
         </button>
       </div>
 
@@ -273,7 +268,7 @@ export function EventDangerActions({ eventId }: { eventId: string }) {
   async function initializeEvent() {
     if (
       !window.confirm(
-        "イベントを初期化します。候補者・投票結果・発表状態をすべて削除し、下書き状態に戻します。実行しますか？",
+        "イベントを初期化します。候補者、投票結果、発表状態をすべて削除し、下書き状態に戻します。実行しますか？",
       )
     ) {
       return;
@@ -302,7 +297,7 @@ export function EventDangerActions({ eventId }: { eventId: string }) {
   async function resetVoteResults() {
     if (
       !window.confirm(
-        "投票結果をリセットします。候補者とイベント設定は残し、投票・集計・発表状態だけを削除します。実行しますか？",
+        "投票結果をリセットします。候補者とイベント設定は残し、投票、集計、発表状態だけを削除します。実行しますか？",
       )
     ) {
       return;
@@ -331,7 +326,7 @@ export function EventDangerActions({ eventId }: { eventId: string }) {
   async function deleteEvent() {
     if (
       !window.confirm(
-        "このイベントを削除します。候補者・投票・集計データも削除されます。実行しますか？",
+        "このイベントを削除します。候補者、投票、集計データも削除されます。実行しますか？",
       )
     ) {
       return;
