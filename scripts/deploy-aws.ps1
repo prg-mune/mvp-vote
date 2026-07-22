@@ -137,9 +137,12 @@ foreach ($propertyName in $registerProperties) {
 }
 
 $taskDefinitionJson = $registerTaskDefinition | ConvertTo-Json -Depth 100 -Compress
+$taskDefinitionPath = Join-Path $env:TEMP "mvp-voting-task-definition-${ImageTag}.json"
+[System.IO.File]::WriteAllText($taskDefinitionPath, $taskDefinitionJson, [System.Text.UTF8Encoding]::new($false))
+$taskDefinitionFile = "file://$taskDefinitionPath"
 
 $newTaskDefinitionArn = aws ecs register-task-definition `
-  --cli-input-json $taskDefinitionJson `
+  --cli-input-json $taskDefinitionFile `
   --region $Region `
   --query "taskDefinition.taskDefinitionArn" `
   --output text
