@@ -158,6 +158,15 @@ aws logs tail /ecs/mvp-voting-app `
   --region ap-northeast-1
 ```
 
+投票画面の診断:
+
+```powershell
+.\scripts\diagnose-vote.ps1 `
+  -VoteUrl "http://mvp-voting-app-alb-640646949.ap-northeast-1.elb.amazonaws.com/vote/イベントID"
+```
+
+このスクリプトは `/api/health`、`/api/events/:eventId`、投票画面HTML、直近のECSログをまとめて確認します。`/api/events/:eventId` が `404` の場合は、本番環境にそのイベントIDが存在していません。
+
 スタック削除:
 
 ```powershell
