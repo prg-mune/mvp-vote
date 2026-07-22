@@ -104,14 +104,14 @@ data/events
 
 ## AWS デプロイ
 
-AWS 側のリソースは CloudFormation で作成します。
+AWS 側のリソースは CloudFormation で作成し、アプリのデプロイは PowerShell CLI スクリプトで行います。GitHub Actions は使いません。
 
 主な追加ファイル:
 
 - `Dockerfile`
 - `.dockerignore`
 - `infra/cloudformation/mvp-voting-app.yml`
-- `.github/workflows/deploy-aws.yml`
+- `scripts/deploy-aws.ps1`
 - `docs/aws-deploy.md`
 
 手順の詳細は [docs/aws-deploy.md](docs/aws-deploy.md) を参照してください。
@@ -120,9 +120,14 @@ AWS 側のリソースは CloudFormation で作成します。
 
 1. AWS CLI でログイン
 2. `infra/cloudformation/mvp-voting-app.yml` を CloudFormation にデプロイ
-3. CloudFormation の出力 `GitHubActionsRoleArn` を GitHub Secret `AWS_ROLE_TO_ASSUME` に登録
-4. GitHub Actions の `Deploy to AWS ECS` を手動実行
-5. CloudFormation の出力 `AppUrl` にアクセス
+3. `scripts/deploy-aws.ps1` で Docker build / ECR push / ECS 更新を実行
+4. CloudFormation の出力 `AppUrl` にアクセス
+
+CLI デプロイ:
+
+```powershell
+.\scripts\deploy-aws.ps1
+```
 
 ## Docker ローカル確認
 
@@ -131,7 +136,7 @@ docker build -t mvp-voting-app .
 docker run --rm -p 3000:3000 -v "${PWD}/data:/app/data" -e ADMIN_PASSWORD=preview mvp-voting-app
 ```
 
-確認URL:
+確認 URL:
 
 ```text
 http://localhost:3000/admin

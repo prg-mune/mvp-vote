@@ -1,6 +1,6 @@
-# AWS CloudFormation デプロイ手順
+# AWS CLI デプロイ手順
 
-このアプリは CloudFormation で AWS 側の土台を作り、GitHub Actions で Docker イメージを ECS Fargate にデプロイします。
+このアプリは CloudFormation で AWS 側の土台を作り、PowerShell スクリプトで Docker イメージを ECS Fargate にデプロイします。GitHub Actions は使いません。
 
 ## 作成される主なリソース
 
@@ -10,24 +10,29 @@
 - Application Load Balancer: 外部公開
 - AWS Systems Manager Parameter Store: 管理者パスワード
 - CloudWatch Logs: アプリログ
-- IAM OIDC Role: GitHub Actions から AWS へ接続
 
 ## 事前準備
 
-AWS CLI でログインします。SSO を使う場合は次の形です。
+必要なもの:
+
+- AWS CLI
+- Docker Desktop
+- Node.js / npm
+
+AWS CLI でログインします。SSO の場合:
 
 ```powershell
 aws configure sso
 aws sso login --profile your-profile
 ```
 
-通常のアクセスキー設定でも動きます。
+通常のアクセスキー設定の場合:
 
 ```powershell
 aws configure
 ```
 
-## 1. CloudFormation スタック作成
+## 1. CloudFormation スタック作成または更新
 
 管理者パスワードは `AdminPassword` に指定します。8文字以上にしてください。
 
@@ -36,25 +41,23 @@ aws cloudformation deploy `
   --stack-name mvp-voting-app `
   --template-file infra/cloudformation/mvp-voting-app.yml `
   --capabilities CAPABILITY_NAMED_IAM `
-  --parameter-overrides `
-    AdminPassword="change-this-password" `
-    GitHubRepository="prg-mune/mvp-vote"
+  --parameter-overrides AdminPassword="change-this-password" `
+  --region ap-northeast-1
 ```
 
-リージョンを固定したい場合は `--region ap-northeast-1` を付けます。
-
-既に GitHub Actions 用の OIDC Provider が AWS アカウントに存在する場合は、重複作成を避けるため ARN を渡します。
+プロファイルを使う場合:
 
 ```powershell
 aws cloudformation deploy `
   --stack-name mvp-voting-app `
   --template-file infra/cloudformation/mvp-voting-app.yml `
   --capabilities CAPABILITY_NAMED_IAM `
-  --parameter-overrides `
-    AdminPassword="change-this-password" `
-    GitHubRepository="prg-mune/mvp-vote" `
-    ExistingGitHubOidcProviderArn="arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+  --parameter-overrides AdminPassword="change-this-password" `
+  --region ap-northeast-1 `
+  --profile your-profile
 ```
+
+既に GitHub Actions 用パラメータ `GitHubRepository` を指定して作成した場合も、今後は指定不要です。
 
 ## 2. 出力値を確認
 
@@ -62,41 +65,106 @@ aws cloudformation deploy `
 aws cloudformation describe-stacks `
   --stack-name mvp-voting-app `
   --query "Stacks[0].Outputs" `
-  --output table
+  --output table `
+  --region ap-northeast-1
 ```
 
 重要な出力値:
 
-- `AppUrl`: アプリの公開URL
-- `GitHubActionsRoleArn`: GitHub Actions に登録する IAM Role ARN
+- `AppUrl`: アプリの公開 URL
 - `EcrRepositoryUri`: 作成された ECR リポジトリ
+- `EcsClusterName`: ECS クラスター名
+- `EcsServiceName`: ECS サービス名
+- `EcsTaskFamily`: ECS タスク定義 family
 
-## 3. GitHub Secret を登録
+## 3. CLI でアプリをデプロイ
 
-GitHub リポジトリの `Settings > Secrets and variables > Actions` に次を登録します。
+次のスクリプトで、Docker build、ECR push、ECS タスク定義更新、ECS サービス更新まで行います。
 
-```text
-AWS_ROLE_TO_ASSUME=GitHubActionsRoleArn の値
+```powershell
+.\scripts\deploy-aws.ps1
 ```
 
-## 4. GitHub Actions でデプロイ
+プロファイル、リージョン、スタック名を指定する場合:
 
-GitHub の画面で次を実行します。
-
-```text
-Actions > Deploy to AWS ECS > Run workflow
+```powershell
+.\scripts\deploy-aws.ps1 `
+  -StackName mvp-voting-app `
+  -Region ap-northeast-1 `
+  -Profile your-profile
 ```
 
-ワークフローは次を行います。
+PowerShell の実行ポリシーで止まる場合:
 
-1. Docker イメージをビルド
-2. ECR に push
-3. CloudFormation が作った ECS タスク定義を取得
-4. コンテナイメージだけ新しいものに差し替え
-5. ECS Service にデプロイ
-6. 初回起動用に ECS Service を `desired-count=1` へ更新
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\deploy-aws.ps1
+```
 
-CloudFormation 作成直後は `ServiceDesiredCount=0` なので、GitHub Actions 実行後にアプリが起動します。
+任意のイメージタグでデプロイする場合:
+
+```powershell
+.\scripts\deploy-aws.ps1 -ImageTag manual-001
+```
+
+ビルド済みイメージを push だけしたい場合:
+
+```powershell
+.\scripts\deploy-aws.ps1 -ImageTag manual-001 -SkipBuild
+```
+
+CloudFormation 作成直後は ECS の `desired-count` が `0` です。デプロイスクリプトはデフォルトで `1` に更新します。
+
+## 4. アプリにアクセス
+
+デプロイ完了後、スクリプト末尾に表示される `App URL` にアクセスします。
+
+手動で確認する場合:
+
+```powershell
+aws cloudformation describe-stacks `
+  --stack-name mvp-voting-app `
+  --query "Stacks[0].Outputs[?OutputKey=='AppUrl'].OutputValue" `
+  --output text `
+  --region ap-northeast-1
+```
+
+## よく使う運用コマンド
+
+ECS サービスを停止:
+
+```powershell
+aws ecs update-service `
+  --cluster mvp-voting-app `
+  --service mvp-voting-app `
+  --desired-count 0 `
+  --region ap-northeast-1
+```
+
+ECS サービスを起動:
+
+```powershell
+aws ecs update-service `
+  --cluster mvp-voting-app `
+  --service mvp-voting-app `
+  --desired-count 1 `
+  --region ap-northeast-1
+```
+
+ログ確認:
+
+```powershell
+aws logs tail /ecs/mvp-voting-app `
+  --follow `
+  --region ap-northeast-1
+```
+
+スタック削除:
+
+```powershell
+aws cloudformation delete-stack `
+  --stack-name mvp-voting-app `
+  --region ap-northeast-1
+```
 
 ## ローカルで Docker 確認
 
@@ -105,7 +173,7 @@ docker build -t mvp-voting-app .
 docker run --rm -p 3000:3000 -v "${PWD}/data:/app/data" -e ADMIN_PASSWORD=preview mvp-voting-app
 ```
 
-確認URL:
+確認 URL:
 
 ```text
 http://localhost:3000/admin

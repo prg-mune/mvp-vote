@@ -1,18 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: MVP Voting App on ECS Fargate with ECR, EFS, ALB, SSM, and GitHub Actions OIDC.
+Description: MVP Voting App on ECS Fargate with ECR, EFS, ALB, and SSM.
 
 Parameters:
   ProjectName:
     Type: String
     Default: mvp-voting-app
-  GitHubRepository:
-    Type: String
-    Default: prg-mune/mvp-vote
-    Description: GitHub repository in owner/name format.
-  ExistingGitHubOidcProviderArn:
-    Type: String
-    Default: ""
-    Description: Optional existing IAM OIDC provider ARN for token.actions.githubusercontent.com.
   AdminPassword:
     Type: String
     NoEcho: true
@@ -39,10 +31,7 @@ Parameters:
   ServiceDesiredCount:
     Type: Number
     Default: 0
-    Description: Keep 0 for bootstrap. GitHub Actions scales the service to 1 after deploying an image.
-
-Conditions:
-  CreateGitHubOidcProvider: !Equals [!Ref ExistingGitHubOidcProviderArn, ""]
+    Description: Keep 0 for bootstrap. The CLI deploy script scales the service to 1 after deploying an image.
 
 Resources:
   Vpc:
@@ -401,65 +390,6 @@ Resources:
           ContainerPort: !Ref ContainerPort
           TargetGroupArn: !Ref TargetGroup
 
-  GitHubOidcProvider:
-    Type: AWS::IAM::OIDCProvider
-    Condition: CreateGitHubOidcProvider
-    Properties:
-      Url: https://token.actions.githubusercontent.com
-      ClientIdList:
-        - sts.amazonaws.com
-      ThumbprintList:
-        - 6938fd4d98bab03faadb97b34396831e3780aea1
-
-  GitHubActionsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}-github-actions-role
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !If
-                - CreateGitHubOidcProvider
-                - !Ref GitHubOidcProvider
-                - !Ref ExistingGitHubOidcProviderArn
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                token.actions.githubusercontent.com:aud: sts.amazonaws.com
-              StringLike:
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepository}:*
-      Policies:
-        - PolicyName: deploy-to-ecs
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ecr:BatchCheckLayerAvailability
-                  - ecr:BatchGetImage
-                  - ecr:CompleteLayerUpload
-                  - ecr:DescribeRepositories
-                  - ecr:GetAuthorizationToken
-                  - ecr:InitiateLayerUpload
-                  - ecr:PutImage
-                  - ecr:UploadLayerPart
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - ecs:DescribeServices
-                  - ecs:DescribeTaskDefinition
-                  - ecs:RegisterTaskDefinition
-                  - ecs:UpdateService
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - iam:PassRole
-                Resource:
-                  - !GetAtt TaskExecutionRole.Arn
-                  - !GetAtt TaskRole.Arn
-
 Outputs:
   AppUrl:
     Value: !Sub http://${LoadBalancer.DNSName}
@@ -473,8 +403,6 @@ Outputs:
     Value: !Ref EcsService
   EcsTaskFamily:
     Value: !Ref ProjectName
-  GitHubActionsRoleArn:
-    Value: !GetAtt GitHubActionsRole.Arn
   AdminPasswordParameterName:
     Value: !Ref AdminPasswordParameter
   EfsFileSystemId:
