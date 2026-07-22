@@ -1,0 +1,16 @@
+.git
+.agents
+.codex
+.next
+.openai/cache
+.vinext
+.wrangler
+coverage
+data
+dev-server*.log
+dist
+node_modules
+npm-debug.log*
+outputs
+preview-server*.log
+work

@@ -1,0 +1,431 @@
+.shell {
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 18px;
+  background: #07111f;
+  color: #ffffff;
+}
+
+.stage {
+  position: relative;
+  min-height: 620px;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(158, 209, 255, 0.28), transparent 30%),
+    linear-gradient(120deg, rgba(11, 107, 203, 0.42), transparent 44%),
+    linear-gradient(145deg, #07111f 0%, #10294a 52%, #123241 100%);
+}
+
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  background:
+    linear-gradient(90deg, transparent 0 9%, rgba(255, 255, 255, 0.16) 9% 9.2%, transparent 9.2% 100%),
+    linear-gradient(0deg, transparent 0 11%, rgba(255, 255, 255, 0.14) 11% 11.2%, transparent 11.2% 100%);
+}
+
+.topbar,
+.centerpiece,
+.controls {
+  position: relative;
+  z-index: 1;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.topbar p,
+.topbar strong,
+.copy p,
+.copy h1 {
+  margin: 0;
+}
+
+.topbar p {
+  color: #9ed1ff;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.topbar strong {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.96rem;
+}
+
+.topbar span {
+  min-width: 88px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  text-align: center;
+  font-weight: 800;
+}
+
+.liveMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liveMeta small {
+  min-width: 54px;
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: #0b6bcb;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.centerpiece {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 26px;
+  padding: 36px 0 18px;
+  text-align: center;
+}
+
+.copy {
+  display: grid;
+  gap: 14px;
+}
+
+.copy p:first-child {
+  color: #72d3a2;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.copy h1 {
+  max-width: 1120px;
+  font-size: clamp(3rem, 8vw, 7.2rem);
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+.copy p:last-child {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: clamp(1rem, 2vw, 1.45rem);
+  line-height: 1.7;
+}
+
+.medal,
+.count,
+.pulse {
+  display: grid;
+  place-items: center;
+  width: clamp(112px, 16vw, 190px);
+  aspect-ratio: 1;
+  border-radius: 8px;
+  font-weight: 1000;
+}
+
+.medal {
+  background: linear-gradient(135deg, #f6ce55, #18a66a);
+  color: #07111f;
+  font-size: clamp(1.7rem, 4vw, 3rem);
+  box-shadow: 0 22px 60px rgba(246, 206, 85, 0.28);
+}
+
+.revealVisual {
+  position: relative;
+  width: clamp(180px, 24vw, 300px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(246, 206, 85, 0.72);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(246, 206, 85, 0.22), rgba(114, 211, 162, 0.18)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 28px 90px rgba(246, 206, 85, 0.28),
+    inset 0 0 42px rgba(255, 255, 255, 0.12);
+  animation: revealIn 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.revealVisual::before,
+.revealVisual::after {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border: 1px solid rgba(246, 206, 85, 0.32);
+  border-radius: 8px;
+  animation: frameSweep 1.8s ease-in-out infinite;
+}
+
+.revealVisual::after {
+  inset: -34px;
+  border-color: rgba(114, 211, 162, 0.18);
+  animation-delay: 240ms;
+}
+
+.spotlightRing {
+  position: absolute;
+  inset: 14px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.32), transparent 26%),
+    conic-gradient(from 180deg, transparent, rgba(246, 206, 85, 0.28), transparent 62%);
+  animation: slowSpin 8s linear infinite;
+}
+
+.revealVisual img {
+  position: relative;
+  z-index: 1;
+  width: calc(100% - 28px);
+  height: calc(100% - 28px);
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.revealVisual span {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+  font-size: clamp(5rem, 12vw, 10rem);
+  font-weight: 1000;
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
+}
+
+.count {
+  border: 2px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6ce55;
+  font-size: clamp(4rem, 9vw, 8rem);
+}
+
+.pulse {
+  background: #0b6bcb;
+  color: #ffffff;
+  box-shadow: 0 0 0 16px rgba(11, 107, 203, 0.15);
+  animation: pulseGlow 1.8s ease-in-out infinite;
+}
+
+.ranking {
+  width: min(100%, 920px);
+  display: grid;
+  gap: 10px;
+}
+
+.footerBar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.footerBar span {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.76);
+  font-weight: 800;
+}
+
+.rankRow {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 52px 54px minmax(0, 1fr) minmax(120px, 0.4fr) 84px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.rankNo,
+.avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.rankNo {
+  height: 44px;
+  color: #07111f;
+  background: #f6ce55;
+}
+
+.avatar {
+  width: 54px;
+  height: 54px;
+  color: #9ed1ff;
+  background: rgba(158, 209, 255, 0.14);
+}
+
+.rankRow strong,
+.rankRow small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rankRow small {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.rankRow b {
+  text-align: right;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  min-height: 44px;
+  min-width: 86px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 9px 14px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.controls button.active {
+  border-color: #72d3a2;
+  background: #18a66a;
+}
+
+.teaser {
+  background:
+    linear-gradient(120deg, rgba(246, 206, 85, 0.28), transparent 44%),
+    linear-gradient(145deg, #10101f 0%, #1d2233 52%, #1e2c2b 100%);
+}
+
+.revealed {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(246, 206, 85, 0.22), transparent 34%),
+    linear-gradient(120deg, rgba(246, 206, 85, 0.38), transparent 40%),
+    linear-gradient(145deg, #101c2d 0%, #13291f 100%);
+}
+
+.rankingState {
+  background:
+    linear-gradient(120deg, rgba(24, 166, 106, 0.26), transparent 42%),
+    linear-gradient(145deg, #0b1424 0%, #13202b 100%);
+}
+
+.finished {
+  background:
+    linear-gradient(120deg, rgba(158, 209, 255, 0.2), transparent 40%),
+    linear-gradient(145deg, #111827 0%, #1f2937 100%);
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 12px rgba(11, 107, 203, 0.12);
+    transform: scale(1);
+  }
+
+  50% {
+    box-shadow: 0 0 0 24px rgba(158, 209, 255, 0.16);
+    transform: scale(1.03);
+  }
+}
+
+@keyframes revealIn {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.82);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes frameSweep {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes slowSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 10px;
+  }
+
+  .stage {
+    min-height: 680px;
+    padding: 18px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .liveMeta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .copy h1 {
+    font-size: 3rem;
+  }
+
+  .rankRow {
+    grid-template-columns: 42px 46px minmax(0, 1fr);
+  }
+
+  .rankRow small,
+  .rankRow b {
+    grid-column: 3;
+    text-align: left;
+  }
+}
