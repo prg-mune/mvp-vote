@@ -23,15 +23,6 @@ function Assert-NativeCommandSucceeded {
   }
 }
 
-function Convert-ToFileUri {
-  param(
-    [string]$Path
-  )
-
-  $fullPath = [System.IO.Path]::GetFullPath($Path)
-  return ([System.Uri]::new($fullPath)).AbsoluteUri
-}
-
 function Get-StackOutputMap {
   param(
     [string]$Name,
@@ -122,13 +113,10 @@ foreach ($propertyName in $removeProperties) {
   $taskDefinition.PSObject.Properties.Remove($propertyName)
 }
 
-$taskDefinitionPath = Join-Path $env:TEMP "mvp-voting-task-definition-${ImageTag}.json"
 $taskDefinitionJson = $taskDefinition | ConvertTo-Json -Depth 100
-[System.IO.File]::WriteAllText($taskDefinitionPath, $taskDefinitionJson, [System.Text.UTF8Encoding]::new($false))
-$taskDefinitionUri = Convert-ToFileUri -Path $taskDefinitionPath
 
 $newTaskDefinitionArn = aws ecs register-task-definition `
-  --cli-input-json $taskDefinitionUri `
+  --cli-input-json $taskDefinitionJson `
   --region $Region `
   --query "taskDefinition.taskDefinitionArn" `
   --output text
