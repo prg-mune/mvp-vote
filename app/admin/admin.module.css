@@ -141,6 +141,42 @@
   justify-self: start;
 }
 
+.imageInputBox {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed #b8ccea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.inlineForm > .imageInputBox {
+  grid-column: 1 / -1;
+}
+
+.imageInputTitle {
+  color: #0f4fa8;
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.orDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7f96;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.orDivider::before,
+.orDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #d6e4f7;
+}
+
 .bulkForm {
   display: grid;
   gap: 12px;
@@ -155,7 +191,7 @@
   grid-template-columns:
     minmax(140px, 0.8fr)
     minmax(180px, 1fr)
-    minmax(200px, 1fr);
+    minmax(220px, 1fr);
   gap: 8px;
 }
 

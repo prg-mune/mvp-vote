@@ -303,7 +303,13 @@ export default function VotePage() {
                   onClick={() => toggleCandidate(candidate.id)}
                   type="button"
                 >
-                  <span className={styles.avatar}>{candidate.name.slice(0, 1)}</span>
+                  <span className={styles.avatar}>
+                    {candidate.imagePath ? (
+                      <img alt="" src={candidate.imagePath} />
+                    ) : (
+                      candidate.name.slice(0, 1)
+                    )}
+                  </span>
                   <span>
                     <strong>{candidate.name}</strong>
                     <small>{candidate.description}</small>

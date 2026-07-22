@@ -344,31 +344,38 @@ export function CandidateManager({
             value={newCandidate.description}
           />
         </label>
-        <label className={styles.field}>
-          <span>画像URL</span>
-          <input
-            disabled={!isEditable || isLoading || Boolean(newImageFile)}
-            onChange={(event) =>
-              setNewCandidate((current) => ({
-                ...current,
-                imagePath: event.target.value,
-              }))
-            }
-            placeholder="https://example.com/photo.jpg"
-            value={newCandidate.imagePath}
-          />
-        </label>
-        <label className={styles.field}>
-          <span>画像アップロード</span>
-          <input
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            disabled={!isEditable || isLoading}
-            onChange={(event) => {
-              setNewImageFile(event.target.files?.[0] ?? null);
-            }}
-            type="file"
-          />
-        </label>
+        <div className={styles.imageInputBox}>
+          <span className={styles.imageInputTitle}>画像の登録方法</span>
+          <label className={styles.field}>
+            <span>URL指定</span>
+            <input
+              disabled={!isEditable || isLoading || Boolean(newImageFile)}
+              onChange={(event) =>
+                setNewCandidate((current) => ({
+                  ...current,
+                  imagePath: event.target.value,
+                }))
+              }
+              placeholder="https://example.com/photo.jpg"
+              value={newCandidate.imagePath}
+            />
+          </label>
+          <div className={styles.orDivider}>または</div>
+          <label className={styles.field}>
+            <span>画像アップロード</span>
+            <input
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              disabled={!isEditable || isLoading || Boolean(newCandidate.imagePath)}
+              onChange={(event) => {
+                setNewImageFile(event.target.files?.[0] ?? null);
+              }}
+              type="file"
+            />
+          </label>
+          <span className={styles.small}>
+            Slackなど認証が必要な画像はアップロードを使ってください。
+          </span>
+        </div>
         <button
           className={styles.primaryButton}
           disabled={!isEditable || isLoading || !newCandidate.name.trim()}
@@ -470,25 +477,32 @@ export function CandidateManager({
                     placeholder="紹介文"
                     value={editingCandidate.description}
                   />
-                  <input
-                    disabled={isLoading || Boolean(editingImageFile)}
-                    onChange={(event) =>
-                      setEditingCandidate((current) => ({
-                        ...current,
-                        imagePath: event.target.value,
-                      }))
-                    }
-                    placeholder="画像URL"
-                    value={editingCandidate.imagePath}
-                  />
-                  <input
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    disabled={isLoading}
-                    onChange={(event) =>
-                      setEditingImageFile(event.target.files?.[0] ?? null)
-                    }
-                    type="file"
-                  />
+                  <div className={styles.imageInputBox}>
+                    <span className={styles.imageInputTitle}>画像の登録方法</span>
+                    <input
+                      disabled={isLoading || Boolean(editingImageFile)}
+                      onChange={(event) =>
+                        setEditingCandidate((current) => ({
+                          ...current,
+                          imagePath: event.target.value,
+                        }))
+                      }
+                      placeholder="画像URL"
+                      value={editingCandidate.imagePath}
+                    />
+                    <div className={styles.orDivider}>または</div>
+                    <input
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      disabled={isLoading || Boolean(editingCandidate.imagePath)}
+                      onChange={(event) =>
+                        setEditingImageFile(event.target.files?.[0] ?? null)
+                      }
+                      type="file"
+                    />
+                    <span className={styles.small}>
+                      アップロードすると保存済み画像URLに置き換わります。
+                    </span>
+                  </div>
                 </div>
               ) : (
                 <div className={styles.candidateInfo}>
