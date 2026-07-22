@@ -23,6 +23,7 @@ export function TieBreakManager({
 }) {
   const router = useRouter();
   const [orderedCandidates, setOrderedCandidates] = useState(candidates);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<MessageState>({
     type: "idle",
@@ -33,20 +34,28 @@ export function TieBreakManager({
     setOrderedCandidates(candidates);
   }, [candidates]);
 
-  function moveCandidate(candidateId: string, direction: -1 | 1) {
+  function reorderCandidate(candidateId: string, nextIndex: number) {
     setOrderedCandidates((current) => {
       const index = current.findIndex((candidate) => candidate.id === candidateId);
-      const nextIndex = index + direction;
-
-      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) {
-        return current;
-      }
+      if (index < 0 || index === nextIndex) return current;
 
       const next = [...current];
-      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      const [moved] = next.splice(index, 1);
+      next.splice(nextIndex, 0, moved);
       return next;
     });
     setMessage({ type: "idle", text: "" });
+  }
+
+  function moveCandidate(candidateId: string, direction: -1 | 1) {
+    const index = orderedCandidates.findIndex(
+      (candidate) => candidate.id === candidateId,
+    );
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= orderedCandidates.length) {
+      return;
+    }
+    reorderCandidate(candidateId, nextIndex);
   }
 
   async function saveTieBreak() {
@@ -81,7 +90,9 @@ export function TieBreakManager({
       <div className={styles.tieBreakHeader}>
         <div>
           <strong>{voteCount}票の同票グループ</strong>
-          <span className={styles.meta}>上から順に順位へ反映されます。</span>
+          <span className={styles.meta}>
+            上から順に順位へ反映されます。行をドラッグして並び替えてください。
+          </span>
         </div>
         <button
           className={styles.button}
@@ -94,7 +105,27 @@ export function TieBreakManager({
       </div>
       <div className={styles.tieList}>
         {orderedCandidates.map((candidate, index) => (
-          <div className={styles.tieRow} key={candidate.id}>
+          <div
+            className={`${styles.tieRow} ${
+              draggingId === candidate.id ? styles.tieRowDragging : ""
+            }`}
+            draggable={!disabled && !isLoading}
+            key={candidate.id}
+            onDragEnd={() => setDraggingId(null)}
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (!draggingId || draggingId === candidate.id) return;
+              reorderCandidate(draggingId, index);
+            }}
+            onDragStart={(event) => {
+              setDraggingId(candidate.id);
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", candidate.id);
+            }}
+          >
+            <span className={styles.dragHandle} aria-hidden="true">
+              ::
+            </span>
             <span className={styles.rankMark}>{index + 1}</span>
             <div className={styles.candidateInfo}>
               <strong>{candidate.name}</strong>

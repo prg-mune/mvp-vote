@@ -660,6 +660,30 @@
   background: #ffffff;
 }
 
+.tieRow {
+  grid-template-columns: 24px 44px minmax(0, 1fr) auto;
+  cursor: grab;
+}
+
+.tieRow:active {
+  cursor: grabbing;
+}
+
+.tieRowDragging {
+  opacity: 0.62;
+  border-color: #1769d2;
+  background: #eef6ff;
+  box-shadow: 0 10px 24px rgba(23, 105, 210, 0.14);
+}
+
+.dragHandle {
+  color: #7d98bd;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-align: center;
+  user-select: none;
+}
+
 .candidateRow {
   grid-template-columns: 44px minmax(0, 1fr) auto auto;
 }
