@@ -138,14 +138,36 @@ export default function PresentationPage() {
       ranking.find((candidate) => candidate.rank === currentRank) ?? ranking[0],
     [currentRank, ranking],
   );
+  const waitingStatusLabel = useMemo(() => {
+    if (!event) return "読み込み中";
+    if (event.status === "draft") return "準備中";
+    if (event.status === "voting") return "投票受付中";
+    if (event.status === "closed" || event.status === "presenting") {
+      return "発表準備中";
+    }
+    return "発表終了";
+  }, [event]);
+  const waitingDescription = useMemo(() => {
+    if (!event) return "発表画面を読み込んでいます。";
+    if (event.status === "draft") {
+      return "管理者が投票受付を開始するまでお待ちください。";
+    }
+    if (event.status === "voting") {
+      return "スマートフォンでQRコードを読み取って投票してください。";
+    }
+    if (event.status === "closed" || event.status === "presenting") {
+      return "投票は締め切られました。まもなく発表を開始します。";
+    }
+    return "ご参加ありがとうございました。";
+  }, [event]);
 
   const headline = useMemo(() => {
     if (!event) return "MVP発表";
-    if (phase === "waiting") return "発表までしばらくお待ちください";
+    if (phase === "waiting") return waitingStatusLabel;
     if (phase === "teaser") return `まもなく第${currentRank}位を発表します`;
     if (phase === "revealed") return currentCandidate?.name ?? "発表中";
     return "ご参加ありがとうございました";
-  }, [currentCandidate?.name, currentRank, event, phase]);
+  }, [currentCandidate?.name, currentRank, event, phase, waitingStatusLabel]);
 
   return (
     <main className={styles.shell}>
@@ -181,15 +203,20 @@ export default function PresentationPage() {
             </div>
           )}
           {phase === "teaser" && <div className={styles.count}>{currentRank}</div>}
-          {phase === "waiting" && (
+          {phase === "waiting" && event?.status === "voting" && (
             <div className={styles.waitingQrCard}>
               {qrDataUrl ? (
                 <img alt="投票参加用QRコード" src={qrDataUrl} />
               ) : (
                 <div className={styles.pulse}>READY</div>
               )}
-              <span>投票受付中</span>
+              <span>{waitingStatusLabel}</span>
               <code>{voteUrl}</code>
+            </div>
+          )}
+          {phase === "waiting" && event?.status !== "voting" && (
+            <div className={styles.waitingStateCard}>
+              <span>{waitingStatusLabel}</span>
             </div>
           )}
           {(phase === "finished" || phase === "all-results") && (
@@ -209,7 +236,7 @@ export default function PresentationPage() {
             )}
             {phase === "waiting" && (
               <p>
-                管理画面から発表操作を行うと、この画面へリアルタイムに反映されます。
+                {waitingDescription}
               </p>
             )}
             {(phase === "finished" || phase === "all-results") && (

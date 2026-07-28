@@ -255,6 +255,25 @@
   font-size: clamp(0.78rem, 1.5vw, 0.95rem);
 }
 
+.waitingStateCard {
+  width: min(86vw, 360px);
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  box-shadow: 0 22px 60px rgba(11, 107, 203, 0.18);
+}
+
+.waitingStateCard span {
+  color: #9ed1ff;
+  font-size: clamp(1.8rem, 4.5vw, 3.4rem);
+  font-weight: 1000;
+}
+
 .ranking {
   width: min(100%, 920px);
   display: grid;
