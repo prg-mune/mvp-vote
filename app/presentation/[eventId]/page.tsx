@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import QRCode from "qrcode";
 import styles from "./page.module.css";
 import type { PresentationPhase, RankedCandidate, VoteEvent } from "@/lib/types";
 
@@ -30,8 +31,16 @@ export default function PresentationPage() {
   const [event, setEvent] = useState<ResultsResponse["event"] | null>(null);
   const [ranking, setRanking] = useState<RankedCandidate[]>([]);
   const [counts, setCounts] = useState<ResultsResponse["counts"]>();
+  const [qrDataUrl, setQrDataUrl] = useState("");
   const [message, setMessage] = useState("読み込み中...");
   const [connection, setConnection] = useState<"live" | "fallback">("fallback");
+  const voteUrl = useMemo(
+    () =>
+      typeof window === "undefined"
+        ? `/vote/${eventId}`
+        : `${window.location.origin}/vote/${eventId}`,
+    [eventId],
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -98,6 +107,29 @@ export default function PresentationPage() {
     };
   }, [eventId]);
 
+  useEffect(() => {
+    let isActive = true;
+
+    QRCode.toDataURL(voteUrl, {
+      margin: 2,
+      width: 440,
+      color: {
+        dark: "#102033",
+        light: "#ffffff",
+      },
+    })
+      .then((dataUrl) => {
+        if (isActive) setQrDataUrl(dataUrl);
+      })
+      .catch(() => {
+        if (isActive) setQrDataUrl("");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [voteUrl]);
+
   const phase = event?.presentationState.phase ?? "waiting";
   const currentRank =
     event?.presentationState.currentRank ?? event?.presentationCount ?? 1;
@@ -149,7 +181,17 @@ export default function PresentationPage() {
             </div>
           )}
           {phase === "teaser" && <div className={styles.count}>{currentRank}</div>}
-          {phase === "waiting" && <div className={styles.pulse}>READY</div>}
+          {phase === "waiting" && (
+            <div className={styles.waitingQrCard}>
+              {qrDataUrl ? (
+                <img alt="投票参加用QRコード" src={qrDataUrl} />
+              ) : (
+                <div className={styles.pulse}>READY</div>
+              )}
+              <span>投票受付中</span>
+              <code>{voteUrl}</code>
+            </div>
+          )}
           {(phase === "finished" || phase === "all-results") && (
             <div className={styles.medal}>END</div>
           )}

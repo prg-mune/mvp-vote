@@ -193,9 +193,12 @@
     minmax(180px, 1fr)
     minmax(220px, 1fr);
   gap: 8px;
+  min-width: 0;
 }
 
 .editFields input {
+  width: 100%;
+  box-sizing: border-box;
   min-height: 40px;
   border: 1px solid #d6e4f7;
   border-radius: 8px;
@@ -722,6 +725,31 @@
 
 .candidateRow {
   grid-template-columns: 44px minmax(0, 1fr) auto auto;
+}
+
+.candidateRowEditing {
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+}
+
+.candidateRowEditing .editFields,
+.candidateRowEditing .orderButtons,
+.candidateRowEditing .resultActions {
+  grid-column: 2;
+}
+
+.candidateRowEditing .orderButtons,
+.candidateRowEditing .resultActions {
+  justify-self: start;
+}
+
+.editFields .imageInputBox {
+  grid-column: 1 / -1;
+}
+
+.imageInputBox input[type="file"] {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .orderButtons {

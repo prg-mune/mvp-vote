@@ -223,6 +223,38 @@
   animation: pulseGlow 1.8s ease-in-out infinite;
 }
 
+.waitingQrCard {
+  width: min(92vw, 420px);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: clamp(16px, 2.8vw, 24px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #102033;
+  box-shadow: 0 28px 90px rgba(11, 107, 203, 0.28);
+}
+
+.waitingQrCard img {
+  width: min(100%, 320px);
+  height: auto;
+  border-radius: 8px;
+}
+
+.waitingQrCard span {
+  color: #0b6bcb;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 900;
+}
+
+.waitingQrCard code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #40556f;
+  font-size: clamp(0.78rem, 1.5vw, 0.95rem);
+}
+
 .ranking {
   width: min(100%, 920px);
   display: grid;

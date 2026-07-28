@@ -445,7 +445,12 @@ export function CandidateManager({
         {orderedCandidates.map((candidate, index) => {
           const isEditing = editingId === candidate.id;
           return (
-            <div className={styles.candidateRow} key={candidate.id}>
+            <div
+              className={`${styles.candidateRow} ${
+                isEditing ? styles.candidateRowEditing : ""
+              }`}
+              key={candidate.id}
+            >
               <span className={styles.avatar}>
                 {candidate.imagePath ? (
                   <img alt="" src={candidate.imagePath} />
