@@ -8,6 +8,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import type {
   Candidate,
   EventStatus,
@@ -786,7 +787,24 @@ async function readJson<T>(filePath: string): Promise<T> {
 async function writeJson(filePath: string, value: unknown) {
   const tmpPath = `${filePath}.${randomUUID()}.tmp`;
   await writeFile(tmpPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-  await rename(tmpPath, filePath);
+  await renameWithRetry(tmpPath, filePath);
+}
+
+async function renameWithRetry(from: string, to: string) {
+  const retryableCodes = new Set(["EACCES", "EBUSY", "EPERM"]);
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      await rename(from, to);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (!retryableCodes.has(code ?? "") || attempt === 5) {
+        throw error;
+      }
+      await delay(40 * (attempt + 1));
+    }
+  }
 }
 
 function createVote(

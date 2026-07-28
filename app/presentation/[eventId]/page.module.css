@@ -298,6 +298,91 @@
   font-weight: 800;
 }
 
+.controlDock {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  z-index: 2;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.controlPanel {
+  width: min(92vw, 330px);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(7, 17, 31, 0.86);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.controlHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.controlHeader span {
+  color: #9ed1ff;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.controlHeader strong {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.9rem;
+}
+
+.controlGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.controlToggle,
+.controlPrimary,
+.controlGrid button {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.controlToggle {
+  min-width: 86px;
+  background: #ffffff;
+  color: #0b6bcb;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+}
+
+.controlPrimary {
+  width: 100%;
+  border-color: #72d3a2;
+  background: #18a66a;
+}
+
+.controlGrid button:disabled,
+.controlPrimary:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.controlMessage {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
 .rankRow {
   min-height: 76px;
   display: grid;
@@ -478,5 +563,14 @@
   .rankRow b {
     grid-column: 3;
     text-align: left;
+  }
+
+  .controlDock {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .controlGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

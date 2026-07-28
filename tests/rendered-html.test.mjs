@@ -101,11 +101,30 @@ test("keeps the admin event list behind password login", async () => {
   assert.doesNotMatch(html, /新規イベント作成/);
 });
 
+test("keeps the presentation screen behind admin login", async () => {
+  const response = await render("/presentation/demo-2026-mvp");
+  assert.equal(response.status, 307);
+  assert.equal(new URL(response.headers.get("location")).pathname, "/admin");
+});
+
 test("rejects unauthenticated event updates", async () => {
   const response = await request("/api/events/demo-2026-mvp", {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ name: "Unauthorized" }),
+  });
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), {
+    error: "管理者ログインが必要です。",
+  });
+});
+
+test("rejects unauthenticated presentation updates", async () => {
+  const response = await request("/api/events/demo-2026-mvp/presentation", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ phase: "teaser", currentRank: 1 }),
   });
 
   assert.equal(response.status, 401);

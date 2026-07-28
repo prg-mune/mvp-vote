@@ -4,7 +4,7 @@ import { verifyAdminRequest } from "@/lib/admin-auth";
 import type { PresentationPhase } from "@/lib/types";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ eventId: string }> },
 ) {
   try {
@@ -27,6 +27,10 @@ export async function POST(
   { params }: { params: Promise<{ eventId: string }> },
 ) {
   try {
+    if (!verifyAdminRequest(request)) {
+      return errorJson(new Error("管理者ログインが必要です。"), 401);
+    }
+
     const { eventId } = await params;
     const body = await readBody<{
       phase?: PresentationPhase;
